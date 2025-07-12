@@ -76,7 +76,7 @@ ________________________________________
 🔙 MyConfig (myconfig.dart)
 •	Stores base API URL:
 class MyConfig {
-  static const String apiUrl = "http://your-ip-address/myborderlink/";
+  static const String apiUrl = " http://192.168.100.15/myborderlink/php/";
 }
 ________________________________________
 🐘 PHP Backend Code Explanation
