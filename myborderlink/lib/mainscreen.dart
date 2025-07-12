@@ -15,8 +15,11 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false, // Disable back button
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        // Optional: handle back press logic here
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Officer Screen'),
