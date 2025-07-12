@@ -38,36 +38,20 @@ CREATE TABLE `tbl_officers` (
   `officer_datereg` DATETIME(6) NOT NULL DEFAULT current_timestamp(6),
   PRIMARY KEY (`officer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 📸 Screenshots
 
 | Splash Screen | Register Screen |
 |---------------|------------------------|
-| ![Splash](assets/screenshots/ Splash Screen.png) | ![Register](assets/screenshots/ Register Screen.png) |
-
-
-
-
-
-
-
-
-
-
-
+| ![Splash](assets/screenshots/SplashScreen.png) | ![Register](assets/screenshots/RegisterScreen.png) |
 
 
 
 
 | Login Screen | Officer Screen |
 |---------------|------------------------|
-| ![Login](assets/screenshots/ Login Screen.png) | ![Officer](assets/screenshots/ Officer Screen.png) |
-
-
-
-
-
-
-
+| ![Login](assets/screenshots/LoginScreen.png) | ![Officer](assets/screenshots/OfficerScreen.png) |
 
 
 
