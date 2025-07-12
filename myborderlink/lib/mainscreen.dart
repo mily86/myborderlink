@@ -19,7 +19,7 @@ class MainScreen extends StatelessWidget {
       onWillPop: () async => false, // Disable back button
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Officer Screenflutter'),
+          title: const Text('Officer Screen'),
           backgroundColor: Colors.orange,
           automaticallyImplyLeading: false,
         ),
