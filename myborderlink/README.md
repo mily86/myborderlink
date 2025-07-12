@@ -27,17 +27,94 @@ o	All user actions are validated
 o	Duplicate email or ID is prevented during registration
 
 
-🗃️ MySQL Table Structure
+📄 Code Explanations for MyBorderLink
+Below explanation of the key Flutter, PHP, and MySQL components used in the MyBorderLink officer registration and login.
+________________________________________
+📱 Flutter App Code Explanation
+1. Splash Screen (splashscreen.dart)
+•	Shows branding and slogan.
+•	Uses a 3-second Timer to auto-navigate to the login screen.
+Timer(const Duration(seconds: 3), () {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const LoginScreen()),
+  );
+});
+________________________________________
+2. Login Screen (loginscreen.dart)
+•	Inputs: Officer ID (numeric), Password
+•	Validates input and shows errors.
+•	Sends POST request to login_user.php
+•	Uses SharedPreferences for “Remember Me”
+final response = await http.post(
+  Uri.parse('${MyConfig.apiUrl}login_user.php'),
+  headers: {"Content-Type": "application/json"},
+  body: jsonEncode({'officer_id': officerId, 'password': password}),
+);
+•	On success, it redirects to MainScreen() with user info.
+________________________________________
+3. Register Screen (registerscreen.dart)
+•	Inputs: Officer ID, Full Name, Email, Password, Checkpoint
+•	Validates all fields, sends POST to register_user.php
+•	Displays success/failure messages
+final response = await http.post(
+  Uri.parse('${MyConfig.apiUrl}register_user.php'),
+  body: jsonEncode({
+    'officer_id': officerId,
+    'full_name': fullName,
+    'email': email,
+    'password': password,
+    'checkpoint_location': checkpoint,
+  }),
+);
+________________________________________
+4. Main Screen (mainscreen.dart)
+•	Displays officer’s name, ID, and checkpoint.
+•	Contains logout button at the bottom.
+•	Prevents back navigation with WillPopScope
+________________________________________
+🔙 MyConfig (myconfig.dart)
+•	Stores base API URL:
+class MyConfig {
+  static const String apiUrl = "http://your-ip-address/myborderlink/";
+}
+________________________________________
+🐘 PHP Backend Code Explanation
+1. Database Connection (dbconnect.php)
+•	Connects to MySQL database using MySQLi.
+•	Used in all backend scripts.
+________________________________________
+2. Register User (register_user.php)
+•	Receives POST data from Flutter.
+•	Validates required fields.
+•	Checks if officer_id or email already exists.
+•	Hashes password before inserting.
+$password_hash = password_hash($password, PASSWORD_DEFAULT);
+•	On success, returns JSON with status: success
+________________________________________
+3. Login User (login_user.php)
+•	Receives officer ID and password.
+•	Queries database for matching officer_id
+•	Verifies hashed password using password_verify()
+if (password_verify($password, $row['officer_password'])) {
+    unset($row['officer_password']);
+    sendJsonResponse(['status' => 'success', 'data' => $row]);
+}
+•	Returns officer info if login is successful.
+________________________________________
+🗃️ MySQL Table: tbl_officers
+CREATE TABLE tbl_officers (
+  officer_id INT PRIMARY KEY,
+  officer_fullname VARCHAR(100),
+  officer_email VARCHAR(100),
+  officer_password VARCHAR(255),
+  officer_checkpoint VARCHAR(50),
+  officer_datereg DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+•	officer_password is stored in hashed format.
+•	officer_id must be unique and integer.
+________________________________________
 
-CREATE TABLE `tbl_officers` (
-  `officer_id` INT(11) NOT NULL,
-  `officer_fullname` VARCHAR(100) NOT NULL,
-  `officer_email` VARCHAR(100) NOT NULL,
-  `officer_password` VARCHAR(255) NOT NULL,
-  `officer_checkpoint` VARCHAR(50) NOT NULL,
-  `officer_datereg` DATETIME(6) NOT NULL DEFAULT current_timestamp(6),
-  PRIMARY KEY (`officer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 📸 Screenshots
