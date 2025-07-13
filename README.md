@@ -116,6 +116,14 @@ CREATE TABLE tbl_officers (
 ________________________________________
 
 
+🔌 PHP Backend API
+
+register_user.php
+Handles officer registration. Validates unique email and officer ID, hashes the password, and inserts into the database.
+
+login_user.php
+Handles officer login. Accepts Officer ID and password, verifies the hashed password, and returns user details if successful.
+
 
 📸 Screenshots
 
@@ -131,17 +139,6 @@ ________________________________________
 | ![Login](assets/screenshots/LoginScreen.png) | ![Officer](assets/screenshots/OfficerScreen.png) |
 
 
-
-
-
-
-🔌 PHP Backend API
-
-register_user.php
-Handles officer registration. Validates unique email and officer ID, hashes the password, and inserts into the database.
-
-login_user.php
-Handles officer login. Accepts Officer ID and password, verifies the hashed password, and returns user details if successful.
 
 
 ## 🚀 How to Run the App
