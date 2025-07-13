@@ -33,6 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             TextField(
               controller: officerIdController,
+              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Officer ID',
                 border: OutlineInputBorder(),
@@ -158,6 +159,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'checkpoint_location': checkpointController.text.trim(),
       }),
     );
+
+    if (!mounted) return; // ✅ Prevent using context if widget is disposed
 
     setState(() {
       isLoading = false;

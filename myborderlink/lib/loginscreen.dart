@@ -100,7 +100,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final int? officerId = int.tryParse(officerIdText);
 
     if (officerId == null || password.isEmpty) {
-      showMessage('Please enter a valid numeric Officer ID and password');
+      if (mounted) {
+        showMessage('Please enter a valid numeric Officer ID and password');
+      }
       return;
     }
 
@@ -115,9 +117,21 @@ class _LoginScreenState extends State<LoginScreen> {
         body: jsonEncode({'officer_id': officerId, 'password': password}),
       );
 
+      if (!mounted) return;
+
       final jsonResponse = jsonDecode(response.body);
 
       if (jsonResponse['status'] == 'success') {
+        if (isChecked) {
+          storeCredentials();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful — credentials stored'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
         String officerId = jsonResponse['data']['officer_id'].toString();
         String fullName = jsonResponse['data']['officer_fullname'];
         String checkpoint = jsonResponse['data']['officer_checkpoint'];
@@ -137,19 +151,21 @@ class _LoginScreenState extends State<LoginScreen> {
         showMessage(jsonResponse['message'] ?? 'Login failed');
       }
     } catch (e) {
-      showMessage('Error: ${e.toString()}');
+      if (mounted) showMessage('Error: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void storeCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('officer_id', officerIdController.text);
-    prefs.setString('password', passwordController.text);
-    prefs.setBool('ischecked', isChecked);
+    await prefs.setString('officer_id', officerIdController.text);
+    await prefs.setString('password', passwordController.text);
+    await prefs.setBool('ischecked', isChecked);
   }
 
   void removeCredentials() async {
@@ -157,12 +173,19 @@ class _LoginScreenState extends State<LoginScreen> {
     await prefs.remove('officer_id');
     await prefs.remove('password');
     await prefs.remove('ischecked');
+
+    if (!mounted) return;
+
     officerIdController.clear();
     passwordController.clear();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Credentials removed')));
   }
 
   void loadCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       officerIdController.text = prefs.getString('officer_id') ?? '';
       passwordController.text = prefs.getString('password') ?? '';
@@ -171,6 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void showMessage(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
