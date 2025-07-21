@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:myborderlink/myconfig.dart';
 
 class LogsDisplayPage extends StatefulWidget {
   const LogsDisplayPage({super.key});
@@ -38,7 +39,7 @@ class _LogsDisplayPageState extends State<LogsDisplayPage> {
     });
 
     final response = await http.post(
-      Uri.parse('https://your-api-url.com/get_logs.php'),
+      Uri.parse('${MyConfig.apiUrl}get_logs.php'), // Using MyConfig here
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({'officer_id': officerId}),
     );
