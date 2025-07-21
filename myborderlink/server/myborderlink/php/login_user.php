@@ -1,60 +1,37 @@
 <?php
+error_reporting( 0 );
+header( 'Access-Control-Allow-Origin: *' );
+// running as crome app
 
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Content-Type: application/json');
-
-include_once('dbconnect.php');
-
-// Decode JSON input
-$data = json_decode(file_get_contents("php://input"), true);
-
-// Validate required fields
-if (
-    !isset($data['officer_id']) ||
-    !isset($data['full_name']) ||
-    !isset($data['email']) ||
-    !isset($data['password']) ||
-    !isset($data['checkpoint_location'])
-) {
-    sendJsonResponse(['status' => 'failed', 'message' => 'Missing required fields']);
-    exit;
+if ( !isset( $_POST ) ) {
+    $response = array( 'status' => 'failed', 'data' => null );
+    sendJsonResponse( $response );
+    die;
 }
 
-// Assign variables
-$officer_id = (int)$data['officer_id']; // Treat as integer
-$full_name = $data['full_name'];
-$email = $data['email'];
-$password = $data['password'];
-$checkpoint = $data['checkpoint_location'];
-$password_hash = password_hash($password, PASSWORD_DEFAULT);
+include_once( 'dbconnect.php' );
 
-// Check if email or officer ID already exists
-$checkSql = "SELECT officer_id FROM tbl_officers WHERE officer_email = ? OR officer_id = ?";
-$checkStmt = $conn->prepare($checkSql);
-$checkStmt->bind_param("si", $email, $officer_id); // officer_id as integer
-$checkStmt->execute();
-$checkStmt->store_result();
+$email = $_POST[ 'email' ];
+$password = sha1( $_POST[ 'password' ] );
 
-if ($checkStmt->num_rows > 0) {
-    sendJsonResponse(['status' => 'failed', 'message' => 'Email or Officer ID already registered']);
-    exit;
-}
-
-// Insert officer data
-$sql = "INSERT INTO tbl_officers (officer_id, officer_fullname, officer_email, officer_password, officer_checkpoint)
-        VALUES (?, ?, ?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("issss", $officer_id, $full_name, $email, $password_hash, $checkpoint);
-
-if ($stmt->execute()) {
-    sendJsonResponse(['status' => 'success', 'message' => 'Login successful']);
+$sqllogin = "SELECT * FROM `tbl_users` WHERE officer_id = '$id' AND officer_password = '$password'";
+$result = $conn->query( $sqllogin );
+if ( $result->num_rows > 0 ) {
+    $sentArray = array();
+    while ( $row = $result->fetch_assoc() ) {
+        $sentArray[] = $row;
+    }
+    $response = array( 'status' => 'success', 'data' =>  $sentArray );
+    sendJsonResponse( $response );
 } else {
-    sendJsonResponse(['status' => 'failed', 'message' => 'Database error: ' . $stmt->error]);
+    $response = array( 'status' => 'failed', 'data' => null );
+    sendJsonResponse( $response );
 }
 
-function sendJsonResponse($response) {
-    echo json_encode($response);
+function sendJsonResponse( $response )
+ {
+    header( 'Content-Type: application/json' );
+    echo json_encode( $response );
 }
+
 ?>
