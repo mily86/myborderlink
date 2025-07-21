@@ -49,7 +49,7 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("issss", $officer_id, $full_name, $email, $password_hash, $checkpoint);
 
 if ($stmt->execute()) {
-    sendJsonResponse(['status' => 'success', 'message' => 'Registration successful']);
+    sendJsonResponse(['status' => 'success', 'message' => 'Login successful']);
 } else {
     sendJsonResponse(['status' => 'failed', 'message' => 'Database error: ' . $stmt->error]);
 }
