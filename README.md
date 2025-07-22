@@ -377,11 +377,11 @@ ________________________________________
 +-----------------+               +-------------------+
 |   tbl_officers  |               |     tbl_logs      |
 +-----------------+               +-------------------+
-| officer_id (PK) | <--------+     | id (PK)           |
+| officer_id (PK) | <--------+      | id (PK)           |
 | officer_fullname|           |     | officer_id (FK)   |
 | officer_email   |           |     | date              |
 | officer_password|           |     | vehicle_plate     |
-| officer_checkpoint |        |     | inspection_type   |
+| officer_checkpoint|         |     | inspection_type   |
 | officer_datereg |           |     | findings          |
 +-----------------+           |     | location          |
                               |     +-------------------+
