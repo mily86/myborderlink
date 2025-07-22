@@ -1,31 +1,45 @@
 <?php
-error_reporting( 0 );
-header( 'Access-Control-Allow-Origin: *' );
-// running as crome app
 
-if ( !isset( $_POST ) ) {
-    $response = array( 'status' => 'failed', 'data' => null );
-    sendJsonResponse( $response );
-    die;
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Content-Type: application/json');
+
+include_once('dbconnect.php');
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (
+    !isset($data['officer_id']) ||
+    !isset($data['password'])
+) {
+    sendJsonResponse(['status' => 'failed', 'message' => 'Missing required fields']);
+    exit;
 }
 
-include_once( 'dbconnect.php' );
+$id = $data[ 'officer_id' ];
+$password = $data[ 'password' ];
 
-$email = $_POST[ 'email' ];
-$password = sha1( $_POST[ 'password' ] );
+$sqllogin = "SELECT * FROM `tbl_officers` WHERE officer_id = ?";
+$stmt = $conn->prepare($sqllogin);
+$stmt->bind_param("s", $id);
+$stmt->execute();
+$result = $stmt->get_result();
 
-$sqllogin = "SELECT * FROM `tbl_users` WHERE officer_id = '$id' AND officer_password = '$password'";
-$result = $conn->query( $sqllogin );
-if ( $result->num_rows > 0 ) {
-    $sentArray = array();
-    while ( $row = $result->fetch_assoc() ) {
-        $sentArray[] = $row;
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    // Verify the password using password_verify
+    if (password_verify($password, $row['officer_password'])) {
+        unset($row['officer_password']);
+        $response = array('status' => 'success', 'data' => [$row]);
+        sendJsonResponse($response);
+    } else {
+        $response = array('status' => 'failed', 'message' => 'Invalid password');
+        sendJsonResponse($response);
     }
-    $response = array( 'status' => 'success', 'data' =>  $sentArray );
-    sendJsonResponse( $response );
 } else {
-    $response = array( 'status' => 'failed', 'data' => null );
-    sendJsonResponse( $response );
+    $response = array('status' => 'failed', 'message' => 'Officer not found');
+    sendJsonResponse($response);
 }
 
 function sendJsonResponse( $response )

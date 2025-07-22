@@ -11,6 +11,29 @@ class LoginScreen extends StatefulWidget {
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
+
+  // Move static session helpers here for global access
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('officer_id');
+    await prefs.remove('full_name');
+    await prefs.remove('checkpoint');
+  }
+
+  static Future<int?> getOfficerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('officer_id');
+  }
+
+  static Future<String?> getFullName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('full_name');
+  }
+
+  static Future<String?> getCheckpoint() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('checkpoint');
+  }
 }
 
 class _LoginScreenState extends State<LoginScreen> {
@@ -22,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    loadCredentials();
+    _checkSession();
   }
 
   @override
@@ -65,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() {
                         isChecked = value!;
                       });
-                      isChecked ? storeCredentials() : removeCredentials();
                     },
                   ),
                 ],
@@ -122,8 +144,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final jsonResponse = jsonDecode(response.body);
 
       if (jsonResponse['status'] == 'success') {
+        int officerId = jsonResponse['data'][0]['officer_id'];
+        String fullName = jsonResponse['data'][0]['officer_fullname'];
+        String checkpoint = jsonResponse['data'][0]['officer_checkpoint'];
+
         if (isChecked) {
-          storeCredentials();
+          storeCredentials(officerId, fullName, checkpoint);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Login successful — credentials stored'),
@@ -132,26 +158,13 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
-        String officerId = jsonResponse['data']['officer_id'].toString();
-        String fullName = jsonResponse['data']['officer_fullname'];
-        String checkpoint = jsonResponse['data']['officer_checkpoint'];
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => MainScreen(
-                  officerId: officerId,
-                  fullName: fullName,
-                  checkpoint: checkpoint,
-                ),
-          ),
-        );
+        await _onLoginSuccess(officerId, fullName, checkpoint);
       } else {
         showMessage(jsonResponse['message'] ?? 'Login failed');
       }
     } catch (e) {
       if (mounted) showMessage('Error: ${e.toString()}');
+      rethrow;
     } finally {
       if (mounted) {
         setState(() {
@@ -161,18 +174,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void storeCredentials() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('officer_id', officerIdController.text);
-    await prefs.setString('password', passwordController.text);
-    await prefs.setBool('ischecked', isChecked);
+  void storeCredentials(
+    int officerId,
+    String fullName,
+    String checkpoint,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('officer_id', officerId);
+    await prefs.setString('full_name', fullName);
+    await prefs.setString('checkpoint', checkpoint);
+    await prefs.setBool('isChecked', isChecked);
   }
 
   void removeCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('officer_id');
-    await prefs.remove('password');
-    await prefs.remove('ischecked');
+    await prefs.remove('full_name');
+    await prefs.remove('checkpoint');
+    await prefs.remove('isChecked');
 
     if (!mounted) return;
 
@@ -198,5 +217,48 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _checkSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final officerId = prefs.getInt('officer_id');
+    final fullName = prefs.getString('full_name');
+    final checkpoint = prefs.getString('checkpoint');
+    if (officerId != null && fullName != null && checkpoint != null) {
+      // User is already logged in, go to MainScreen
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => MainScreen(
+                  officerId: officerId,
+                  fullName: fullName,
+                  checkpoint: checkpoint,
+                ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onLoginSuccess(
+    int officerId,
+    String fullName,
+    String checkpoint,
+  ) async {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => MainScreen(
+                officerId: officerId,
+                fullName: fullName,
+                checkpoint: checkpoint,
+              ),
+        ),
+      );
+    }
   }
 }

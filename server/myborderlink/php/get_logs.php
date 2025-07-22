@@ -1,40 +1,37 @@
 <?php
-$connection = new mysqli("localhost", "username", "password", "database");
 
-if ($connection->connect_error) {
-    die("Connection failed: " . $connection->connect_error);
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Content-Type: application/json');
+
+include_once('dbconnect.php');
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (!isset($data['officer_id'])) {
+    sendJsonResponse(['status' => 'failed', 'message' => 'Officer ID required.']);
+    exit;
 }
 
-// Use POST instead of GET for security
-$officer_id = $_POST['officer_id'];
+$officer_id = $data['officer_id'];
 
-// Prepare statement to prevent SQL injection
-$sql = "SELECT * FROM logs WHERE officer_id = ?";
-$stmt = $connection->prepare($sql);
-
-if ($stmt === false) {
-    die("Error preparing query: " . $connection->error);
-}
-
-// Bind the officer_id to the prepared statement
-$stmt->bind_param("s", $officer_id);
-
-// Execute the query
+$stmt = $conn->prepare("SELECT id, date, vehicle_plate, inspection_type, findings, location FROM tbl_logs WHERE officer_id = ? ORDER BY date DESC");
+$stmt->bind_param("i", $officer_id);
 $stmt->execute();
-
-// Get the result
 $result = $stmt->get_result();
 
-// Fetch logs as an associative array
-$logs = array();
+$logs = [];
 while ($row = $result->fetch_assoc()) {
     $logs[] = $row;
 }
 
-// Return logs as a JSON response
-echo json_encode($logs);
+sendJsonResponse(['status' => 'success', 'logs' => $logs]);
 
-// Close connection
 $stmt->close();
-$connection->close();
+$conn->close();
+
+function sendJsonResponse($response) {
+    echo json_encode($response);
+}
 ?>

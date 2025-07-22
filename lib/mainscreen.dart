@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:myborderlink/loginscreen.dart';
+import 'loginsertionscreen.dart';
+import 'logdisplay.dart';
 
 class MainScreen extends StatelessWidget {
-  final String officerId;
+  final int officerId;
   final String fullName;
   final String checkpoint;
 
@@ -64,10 +66,43 @@ class MainScreen extends StatelessWidget {
                 const SizedBox(height: 30),
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.pushReplacement(
+                    Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      MaterialPageRoute(
+                        builder:
+                            (_) => LogInsertionScreen(
+                              officerId: officerId,
+                              location: checkpoint,
+                            ),
+                      ),
                     );
+                  },
+                  icon: const Icon(Icons.note_add_rounded),
+                  label: const Text("Insert Activity Log"),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LogDisplayScreen(officerId: officerId),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.list_alt_rounded),
+                  label: const Text("View Activity Logs"),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await LoginScreen.clearSession();
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.logout),
                   label: const Text("Logout"),

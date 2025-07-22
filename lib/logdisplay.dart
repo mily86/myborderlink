@@ -1,143 +1,161 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'models/log_model.dart';
+import 'myconfig.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:myborderlink/myconfig.dart';
+import 'package:http/http.dart' as http;
 
-class LogsDisplayPage extends StatefulWidget {
-  const LogsDisplayPage({super.key});
+class LogDisplayScreen extends StatefulWidget {
+  final int officerId;
+
+  const LogDisplayScreen({super.key, required this.officerId});
 
   @override
-  _LogsDisplayPageState createState() => _LogsDisplayPageState();
+  State<LogDisplayScreen> createState() => _LogDisplayScreenState();
 }
 
-class _LogsDisplayPageState extends State<LogsDisplayPage> {
-  List<Log> logs = [];
-  String officerId = '';
-  String searchDate = '';
-  bool isLoading = false;
+class _LogDisplayScreenState extends State<LogDisplayScreen> {
+  late Future<List<LogEntry>> _logsFuture;
+  List<LogEntry> _allLogs = [];
+  List<LogEntry> _filteredLogs = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadOfficerId();
-    _fetchLogs();
+    _logsFuture = fetchLogs();
+    _searchController.addListener(_onSearchChanged);
   }
 
-  // Load officer ID from SharedPreferences
-  Future<void> _loadOfficerId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      officerId = prefs.getString('officer_id') ?? '';
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  // Fetch logs from the server
-  Future<void> _fetchLogs() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    final response = await http.post(
-      Uri.parse('${MyConfig.apiUrl}get_logs.php'), // Using MyConfig here
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({'officer_id': officerId}),
-    );
-
-    if (response.statusCode == 200) {
-      final List logsData = jsonDecode(response.body);
-      setState(() {
-        logs = logsData.map((log) => Log.fromJson(log)).toList();
-      });
-    } else {
-      _showErrorMessage("Failed to load logs");
+  Future<List<LogEntry>> fetchLogs() async {
+    try {
+      final url = Uri.parse('${MyConfig.apiUrl}get_logs.php');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'officer_id': widget.officerId}),
+      );
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body);
+          // Accept both 'status' and 'success' for compatibility
+          final bool isSuccess =
+              (data['status'] == 'success') || (data['success'] == true);
+          if (isSuccess && data['logs'] != null) {
+            final logs =
+                (data['logs'] as List)
+                    .map((log) => LogEntry.fromJson(log))
+                    .toList();
+            _allLogs = logs;
+            _filteredLogs = logs;
+            return logs;
+          } else {
+            throw Exception(data['message'] ?? 'Failed to load logs');
+          }
+        } catch (e) {
+          throw Exception('Invalid server response.');
+        }
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(
+        'Could not fetch logs. Please check your connection or try again later.\nError: $e',
+      );
     }
-
-    setState(() {
-      isLoading = false;
-    });
   }
 
-  // Show an error message
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
-  // Search/filter logs by date
-  void _searchLogs(String query) {
+  void _onSearchChanged() {
+    final query = _searchController.text.trim().toLowerCase();
     setState(() {
-      searchDate = query;
-      logs = logs.where((log) => log.date.contains(searchDate)).toList();
+      if (query.isEmpty) {
+        _filteredLogs = List.from(_allLogs);
+      } else {
+        _filteredLogs =
+            _allLogs.where((log) {
+              final date = (log.date ?? '').toLowerCase();
+              return date.contains(query);
+            }).toList();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Logs Display")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Search Bar
-            TextField(
-              decoration: const InputDecoration(
-                labelText: "Search by Date (YYYY-MM-DD)",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: _searchLogs,
-            ),
-            const SizedBox(height: 10),
-
-            // Loading Indicator
-            if (isLoading) const Center(child: CircularProgressIndicator()),
-
-            // Logs List
-            if (!isLoading)
-              Expanded(
-                child: ListView.builder(
-                  itemCount: logs.length,
-                  itemBuilder: (context, index) {
-                    final log = logs[index];
-                    return ListTile(
-                      title: Text('Inspection: ${log.inspectionType}'),
-                      subtitle: Text(
-                        'Date: ${log.date}, Vehicle: ${log.vehiclePlateNumber}',
-                      ),
-                      onTap: () {
-                        // You can navigate to a detailed log screen if needed
-                      },
-                    );
-                  },
+      appBar: AppBar(
+        title: const Text('Activity Logs'),
+        backgroundColor: Colors.orange,
+      ),
+      body: FutureBuilder<List<LogEntry>>(
+        future: _logsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error:  ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No logs found.'));
+          }
+          // Only set _allLogs and _filteredLogs if they are empty (first build after fetch)
+          if (_allLogs.isEmpty) {
+            _allLogs = snapshot.data!;
+            _filteredLogs = List.from(_allLogs);
+          }
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    labelText: 'Search by Date (YYYY-MM-DD)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.search),
+                  ),
                 ),
               ),
-          ],
-        ),
+              Expanded(
+                child:
+                    _filteredLogs.isEmpty
+                        ? const Center(
+                          child: Text('No logs match your search.'),
+                        )
+                        : ListView.builder(
+                          itemCount: _filteredLogs.length,
+                          itemBuilder: (context, index) {
+                            final log = _filteredLogs[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              child: ListTile(
+                                title: Text(
+                                  '${log.inspectionType} - ${log.vehiclePlate}',
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Date: ${log.date}'),
+                                    Text('Findings: ${log.findings}'),
+                                    Text('Location: ${log.location}'),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+              ),
+            ],
+          );
+        },
       ),
-    );
-  }
-}
-
-class Log {
-  final String inspectionType;
-  final String date;
-  final String vehiclePlateNumber;
-
-  Log({
-    required this.inspectionType,
-    required this.date,
-    required this.vehiclePlateNumber,
-  });
-
-  factory Log.fromJson(Map<String, dynamic> json) {
-    return Log(
-      inspectionType: json['inspection_type'],
-      date: json['date'],
-      vehiclePlateNumber: json['vehicle_plate'],
     );
   }
 }

@@ -56,6 +56,22 @@ ALTER TABLE `tbl_officers`
 --
 ALTER TABLE `tbl_officers`
   MODIFY `officer_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Table structure for table `tbl_logs`
+--
+
+CREATE TABLE tbl_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    officer_id INT NOT NULL,
+    date DATE NOT NULL,
+    vehicle_plate VARCHAR(20) NOT NULL,
+    inspection_type VARCHAR(50) NOT NULL,
+    findings TEXT NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    FOREIGN KEY (officer_id) REFERENCES tbl_officers(officer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
