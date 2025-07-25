@@ -374,8 +374,7 @@ CREATE TABLE tbl_logs (
 ________________________________________
 🗃️ ERD
 
-| ERD DIAGRAM
-|
+ERD DIAGRAM
 |---------------|
 | ![ERD](assets/screenshots/ERD.png) |
 
