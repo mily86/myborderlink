@@ -374,19 +374,33 @@ CREATE TABLE tbl_logs (
 ________________________________________
 🗃️ ERD
 
-+-----------------+               +-------------------+
-|   tbl_officers  |               |     tbl_logs      |
-+-----------------+               +-------------------+
-| officer_id (PK) | <--------+      | id (PK)           |
-| officer_fullname|           |     | officer_id (FK)   |
-| officer_email   |           |     | date              |
-| officer_password|           |     | vehicle_plate     |
-| officer_checkpoint|         |     | inspection_type   |
-| officer_datereg |           |     | findings          |
-+-----------------+           |     | location          |
-                              |     +-------------------+
-                              |
-                              +-> One-to-Many (One Officer can have many Logs)
+| ERD DIAGRAM
+|
+|---------------|
+| ![ERD](assets/screenshots/ERD.png) |
+
+
+Table tbl_officers {
+  officer_id int [pk, increment]
+  officer_fullname varchar(100)
+  officer_email varchar(100) [unique]
+  officer_password varchar(255)
+  officer_checkpoint varchar(50)
+  officer_datereg datetime
+}
+
+Table tbl_logs {
+  id int [pk, increment]
+  officer_id int [ref: > tbl_officers.officer_id]
+  date date
+  vehicle_plate varchar(20)
+  inspection_type varchar(50)
+  findings text
+  location varchar(100)
+}
+
+Ref: tbl_officers.officer_id > tbl_logs.officer_id
+
 
 Relationship Between tbl_officers and tbl_logs:
 
